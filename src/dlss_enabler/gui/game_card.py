@@ -122,16 +122,16 @@ class GameCardWidget(QWidget):
         painter.setClipPath(cover_path)
 
         if self.pixmap and not self.pixmap.isNull():
-            # Draw scaled cover image
+            # Draw scaled cover image preserving full aspect ratio (no forced cropping)
             scaled = self.pixmap.scaled(
                 QSize(w, self.COVER_HEIGHT),
-                Qt.AspectRatioMode.KeepAspectRatioByExpanding,
+                Qt.AspectRatioMode.KeepAspectRatio,
                 Qt.TransformationMode.SmoothTransformation,
             )
-            # Center crop
-            x_off = (scaled.width() - w) // 2
-            y_off = max(0, (scaled.height() - self.COVER_HEIGHT) // 2)
-            painter.drawPixmap(0, 0, w, self.COVER_HEIGHT, scaled, x_off, y_off, w, self.COVER_HEIGHT)
+            # Center the image horizontally and vertically within the cover rect
+            x_off = (w - scaled.width()) // 2
+            y_off = (self.COVER_HEIGHT - scaled.height()) // 2
+            painter.drawPixmap(x_off, y_off, scaled)
 
             # Gradient scrim at bottom of cover for smooth transition
             grad = QBrush()
