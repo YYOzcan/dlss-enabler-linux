@@ -114,32 +114,35 @@ class GameCardWidget(QWidget):
         # 1. Draw Cover Image in Top Area
         cover_rect = QRect(0, 0, w, self.COVER_HEIGHT)
         cover_path = QPainterPath()
-        cover_path.addRoundedRect(0.5, 0.5, w - 1, self.COVER_HEIGHT, radius, radius)
-        # Rect for flat bottom of cover
-        cover_path.addRect(0, radius, w, self.COVER_HEIGHT - radius)
+        cover_path.setFillRule(Qt.FillRule.WindingFill)
+        cover_path.addRoundedRect(0.0, 0.0, float(w), float(self.COVER_HEIGHT), float(radius), float(radius))
+        # Square off bottom corners so only top corners of cover are rounded
+        cover_path.addRect(0.0, float(radius), float(w), float(self.COVER_HEIGHT - radius))
 
         painter.save()
         painter.setClipPath(cover_path)
 
         if self.pixmap and not self.pixmap.isNull():
-            # Draw scaled cover image preserving full aspect ratio (no forced cropping)
+            # Fill cover background first with dark backdrop
+            painter.fillRect(0, 0, w, self.COVER_HEIGHT, QColor("#121520"))
+
+            # Draw scaled cover image filling the cover rectangle nicely
             scaled = self.pixmap.scaled(
                 QSize(w, self.COVER_HEIGHT),
-                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.AspectRatioMode.KeepAspectRatioByExpanding,
                 Qt.TransformationMode.SmoothTransformation,
             )
-            # Center the image horizontally and vertically within the cover rect
-            x_off = (w - scaled.width()) // 2
-            y_off = (self.COVER_HEIGHT - scaled.height()) // 2
-            painter.drawPixmap(x_off, y_off, scaled)
+            # Center crop
+            x_off = max(0, (scaled.width() - w) // 2)
+            y_off = max(0, (scaled.height() - self.COVER_HEIGHT) // 2)
+            painter.drawPixmap(0, 0, scaled, x_off, y_off, w, self.COVER_HEIGHT)
 
-            # Gradient scrim at bottom of cover for smooth transition
-            grad = QBrush()
+            # Gradient scrim at bottom of cover for smooth transition into title
             from PyQt6.QtGui import QLinearGradient
-            lg = QLinearGradient(0, self.COVER_HEIGHT - 60, 0, self.COVER_HEIGHT)
+            lg = QLinearGradient(0, self.COVER_HEIGHT - 45, 0, self.COVER_HEIGHT)
             lg.setColorAt(0, QColor(0, 0, 0, 0))
-            lg.setColorAt(1, QColor(18, 21, 32, 220))
-            painter.fillRect(0, self.COVER_HEIGHT - 60, w, 60, lg)
+            lg.setColorAt(1, QColor(18, 21, 32, 230))
+            painter.fillRect(0, self.COVER_HEIGHT - 45, w, 45, lg)
         else:
             # Elegant Fallback: Dark gradient with game initials
             from PyQt6.QtGui import QLinearGradient

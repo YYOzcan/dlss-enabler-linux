@@ -5,7 +5,6 @@ Designed for a clean, professional, distraction-free gaming dashboard.
 DARK_THEME_QSS = """
 /* Global Window Style */
 QWidget {
-    background-color: #0b0d13;
     color: #e2e8f0;
     font-family: 'Segoe UI', 'Inter', 'Ubuntu', -apple-system, sans-serif;
     font-size: 13px;
@@ -13,7 +12,7 @@ QWidget {
     selection-color: #ffffff;
 }
 
-QMainWindow {
+QMainWindow, QDialog {
     background-color: #0b0d13;
 }
 
