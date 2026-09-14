@@ -5,8 +5,8 @@
 </p>
 
 <p align="center">
-  <b>Tüm Linux Dağıtımları İçin Otomatik DLSS ve Frame Generation Yöneticisi</b><br>
-  <i>Universal DLSS Upscaler & Frame Generation Injector for Proton / Wine</i>
+  <b>Universal DLSS & Frame Generation Manager for All Linux Distributions</b><br>
+  <i>Automatic Game Scanner, Sleek Poster Grid Interface, One-Click Proton Injector</i>
 </p>
 
 <p align="center">
@@ -19,37 +19,30 @@
 
 ---
 
-## 🇹🇷 Türkçe Açıklama
+## 📖 Overview
 
-**DLSS Enabler for Linux**, Linux oyuncularının DLSS 2+ (Super Resolution) ve DLSS 3 (Frame Generation / Kare Üretimi) özelliklerini tüm ekran kartlarında (NVIDIA RTX/GTX, AMD Radeon, Intel Arc) tek tıkla kurup yönetmelerini sağlayan modern ve şık bir masaüstü uygulamasıdır.
+**DLSS Enabler for Linux** is a modern, native desktop application designed for Linux gamers. It allows you to automatically scan your game library and inject the latest **DLSS Enabler** and **OptiScaler** binaries into Proton/Wine game directories with a single click—enabling DLSS Super Resolution and Frame Generation on any compatible GPU (NVIDIA RTX/GTX, AMD Radeon, Intel Arc).
 
-### ✨ Öne Çıkan Özellikler
-- 🔍 **Otomatik Oyun Tarama:** Steam (Yerel, Flatpak, Snap), Heroic Games Launcher (Epic Games, GOG, Amazon Nile), Lutris ve Bottles kütüphanelerinizi tek tıkla otomatik olarak tarar.
-- 🎯 **Akıllı Hedef Tespiti:** Unreal Engine shipping dosyalarını (`*Win64-Shipping.exe`), DirectX 12 ikililerini ve alt klasörleri otomatik analiz eder.
-- ⚡ **Tek Tıkla En Güncel Sürüm İndirme:** DLSS Enabler ve OptiScaler'ın en güncel resmi GitHub sürümlerini arka planda indirir, açar ve hazır bekletir.
-- 🛡️ **Güvenli Yedekleme & Geri Alma (Unpatch):** Orijinal DLL dosyalarını otomatik yedekler (`.dlss_backup`). İstediğiniz zaman tek tıkla oyunu ilk haline döndürür.
-- 🎛️ **Geniş Hook Yöntemleri:** `version.dll`, `dxgi.dll`, `winmm.dll`, `d3d12.dll`, `dinput8.dll` arasından oyuna özel önerilen yöntemi otomatik seçer.
-- 🌐 **6 Dil Desteği:** 🇹🇷 Türkçe, 🇬🇧 English, 🇩🇪 Deutsch, 🇫🇷 Français, 🇪🇸 Español, 🇷🇺 Русский dilleri arasında arayüzden anında dinamik geçiş!
-- 📋 **Tek Tıkla Başlatma Seçeneği Kopyalama:** Steam, Heroic, Lutris ve Bottles için launcher'a özel talimatlar ve `WINEDLLOVERRIDES="version=n,b" SteamDeck=0 %command%` kodunu tek tıkla panoya kopyalar.
-- 🎨 **Siberpunk / Koyu Tema Arayüzü:** Akıcı arayüz, arama çubuğu, platform filtreleri ve oyun kapak görselleri.
-- 🐧 **Her Dağıtıma Uyumlu:** Arch, CachyOS, Fedora, Ubuntu, Debian, Pop!_OS, SteamOS, Bazzite ve Manjaro ile tam uyumlu.
-
----
-
-## 🇬🇧 English Summary
-
-A sleek, native desktop application for Linux gamers to automatically scan installed games and inject the latest **DLSS Enabler** and **OptiScaler** binaries into Proton/Wine game directories with a single click.
+### ✨ Key Features
+- 🔍 **Automatic Game Scanner:** Instantly detects installed games across **Steam** (Native, Flatpak, Snap, Library Folders), **Heroic Games Launcher** (Epic, GOG, Amazon), **Lutris**, **Bottles**, and Custom folders (filtering out non-game tools and runtimes automatically).
+- 🖼️ **Gorgeous Poster Grid UI:** Displays games in a clean, minimal obsidian dark theme featuring high-resolution vertical cover art posters and live patch-status badges.
+- ⚡ **One-Click Core Updates:** Automatically fetches and caches the latest official DLSS Enabler & OptiScaler releases straight from GitHub.
+- 🛡️ **Safe Backup & Restore (Unpatch):** Automatically creates `.dlss_backup` files before patching. Fully restores original files on uninstallation.
+- 🎛️ **Flexible Hook Methods:** Supports `version.dll`, `dxgi.dll`, `winmm.dll`, `d3d12.dll`, `dinput8.dll` with intelligent recommendations per game.
+- 🌐 **Multi-Language Support:** Instant dynamic switching between **English**, **Turkish**, **German**, **French**, **Spanish**, and **Russian** (defaults to English).
+- 📋 **Launch Options Generator:** Generates launcher-specific instructions and the required Proton override command (`WINEDLLOVERRIDES="version=n,b" SteamDeck=0 %command%`) with a one-click copy button.
+- 🐧 **Cross-Distro Ready:** Fully compatible with Arch Linux, CachyOS, Fedora, Ubuntu, Debian, Pop!_OS, SteamOS, Bazzite, and Manjaro.
 
 ---
 
-## 📦 Kurulum / Installation
+## 📦 Installation
 
-### Gereksinimler / Prerequisites
+### Prerequisites
 - **Python 3.9+**
-- **PyQt6** ve **requests**
-- **Wine** (Installer çıkarımı için)
+- **PyQt6** and **requests**
+- **Wine** (for silent setup extraction)
 
-#### Dağıtıma Göre Paket Kurulumu:
+#### Package Installation by Distro:
 - **Arch Linux / CachyOS / Manjaro:**
   ```bash
   sudo pacman -S python python-pyqt6 python-requests wine
@@ -65,9 +58,9 @@ A sleek, native desktop application for Linux gamers to automatically scan insta
 
 ---
 
-### 🚀 Hızlı Kurulum / Quick Install
+### 🚀 Quick Install
 
-Depoyu klonlayıp tek komutla kurun:
+Clone the repository and run the automated installer:
 
 ```bash
 git clone https://github.com/YYOzcan/dlss-enabler-linux.git
@@ -75,57 +68,59 @@ cd dlss-enabler-linux
 ./install.sh
 ```
 
-Kurulum tamamlandığında uygulama menünüzde **DLSS Enabler** simgesi görünecektir veya terminalden şu komutla çalıştırabilirsiniz:
+Once installed, **DLSS Enabler** will appear in your desktop application menu, or you can launch it via terminal:
 ```bash
 dlss-enabler-gui
 ```
 
 ---
 
-## 🎮 Nasıl Kullanılır? / How to Use
+## 🎮 How to Use
 
-1. Uygulamayı açın. Oyunlarınız (Steam, Heroic, Lutris vb.) otomatik taranacaktır.
-2. Sağ üstteki **Check / Update** butonu ile en güncel DLSS Enabler ikililerini indirin (halihazırda otomatik kontrol edilir).
-3. Listeden oynamak istediğiniz oyunu seçin.
-4. **"⚡ Install DLSS Enabler"** butonuna tıklayın.
-5. **"📋 Copy"** butonuna basarak Proton başlatma seçeneğini kopyalayın:
+1. Launch the application. Your installed games will be scanned automatically.
+2. Check the top bar to ensure the core binaries are ready (click **Check Updates** if needed).
+3. Click on any game poster card to open the configuration modal.
+4. Select your preferred hook method and click **"⚡ Install DLSS Enabler"**.
+5. Click **"📋 Copy"** to copy the Proton launch options:
    ```text
    WINEDLLOVERRIDES="version=n,b" SteamDeck=0 %command%
    ```
-6. Steam'de oyuna sağ tıklayıp **Özellikler > Başlatma Seçenekleri** kutusuna bu satırı yapıştırın.
-7. Oyunu başlatın ve oyun içi ayarlardan DLSS ve Frame Generation'ı açın!
+6. Paste this into your game launcher properties (e.g., Steam: Right-click game > Properties > General > Launch Options).
+7. Launch your game and enable DLSS / Frame Generation in graphics settings!
 
 ---
 
-## 📁 Proje Yapısı / Project Structure
+## 📁 Project Structure
 
 ```text
 dlss-enabler-linux/
-├── assets/                  # SVG & PNG uygulama simgeleri
+├── assets/                  # SVG & PNG app icons
 ├── bin/
-│   └── dlss-enabler-gui     # Başlatıcı betik
+│   └── dlss-enabler-gui     # Launcher script
 ├── src/
 │   └── dlss_enabler/
-│       ├── downloader.py    # GitHub release indirici & arşiv açıcı
-│       ├── patcher.py       # Güvenli DLL enjektörü ve yedekleme yöneticisi
-│       ├── scanner.py       # Steam, Heroic, Lutris, Bottles tarama motoru
-│       ├── quirks.py        # Oyun uyumluluk ve tavsiye veritabanı
+│       ├── downloader.py    # GitHub release downloader & extractor
+│       ├── i18n.py          # Multi-language translation engine (EN, TR, DE, FR, ES, RU)
+│       ├── patcher.py       # Safe DLL injector & backup manager
+│       ├── quirks.py        # Game compatibility & recommendations DB
+│       ├── scanner.py       # Steam, Heroic, Lutris, Bottles scanner engine
 │       ├── gui/
-│       │   ├── main_window.py # PyQt6 modern masaüstü arayüzü
-│       │   └── styles.py      # Koyu tema QSS stilleri
-│       └── main.py          # Program giriş noktası
-├── tests/                   # Otomatik doğrulama testleri
-├── install.sh               # Çapraz dağıtım otomatik kurulum betiği
-├── uninstall.sh             # Temiz kaldırma betiği
-├── dlss-enabler.desktop     # Masaüstü entegrasyon dosyası
-├── pyproject.toml           # Standart Python paket yapılandırması
-└── requirements.txt         # Bağımlılıklar
+│       │   ├── game_card.py   # Poster card grid & detail modal UI
+│       │   ├── main_window.py # Main window layout & controllers
+│       │   └── styles.py      # Obsidian minimalist dark theme QSS
+│       └── main.py          # Application entry point
+├── tests/                   # Automated unit & integration test suites
+├── install.sh               # Cross-distro installer script
+├── uninstall.sh             # Clean uninstaller script
+├── dlss-enabler.desktop     # XDG desktop integration file
+├── pyproject.toml           # Standard Python project metadata
+└── requirements.txt         # Python dependencies
 ```
 
 ---
 
-## 🤝 Katkıda Bulunma / Contributing
-Hata bildirimleri, yeni oyun önerileri veya pull request'ler her zaman memnuniyetle karşılanır!
+## 🤝 Contributing
+Bug reports, game compatibility tweaks, and pull requests are always welcome!
 
-## 📜 Lisans / License
-Bu proje MIT lisansı ile lisanslanmıştır. DLSS Enabler ve OptiScaler bileşenleri ilgili geliştiricilerine aittir.
+## 📜 License
+This project is licensed under the MIT License. DLSS Enabler and OptiScaler binaries belong to their respective creators.
