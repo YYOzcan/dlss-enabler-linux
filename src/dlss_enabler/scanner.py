@@ -31,6 +31,7 @@ class GameInfo:
     launcher: str  # steam, heroic, lutris, bottles, custom
     install_path: str
     executable_path: str = ""
+    local_cover_path: str = ""
     is_patched: bool = False
     patch_method: str = ""
     patch_version: str = ""
@@ -112,6 +113,7 @@ class GameScanner:
                     appid = ""
                     name = ""
                     installdir = ""
+                    state_flags = "0"
                     with open(manifest, "r", encoding="utf-8", errors="replace") as f:
                         for line in f:
                             clean = line.strip()
@@ -121,20 +123,42 @@ class GameScanner:
                                 name = line.split('"name"', 1)[1].strip().strip('"')
                             elif clean.startswith('"installdir"'):
                                 installdir = line.split('"installdir"', 1)[1].strip().strip('"')
+                            elif clean.startswith('"StateFlags"'):
+                                state_flags = line.split('"StateFlags"', 1)[1].strip().strip('"')
 
                     if not appid or not name:
                         continue
 
-                    # Filter out tools, runtimes, redistributables
+                    # Filter out tools, runtimes, development utilities, redistributables
                     lower_name = name.lower()
                     if any(x in lower_name for x in [
                         "proton", "steam linux runtime", "steamworks common redistributables",
-                        "soundtrack", "server", "sdk", "redistributable"
+                        "soundtrack", "server", "sdk", "redistributable", "benchmark",
+                        "lossless scaling", "clickteam", "wallpaper engine"
                     ]):
                         continue
 
+                    # Exclude known runtime appids
+                    if appid in {"228980", "1070560", "1391110", "1628350", "4183110", "1493710", "2348590", "1420170"}:
+                        continue
+
+                    # Must be fully installed (StateFlags & 4 == 4)
+                    try:
+                        flags = int(state_flags)
+                        if not (flags & 4):
+                            continue
+                    except ValueError:
+                        continue
+
                     install_path = steamapps / "common" / installdir if installdir else Path()
-                    if not install_path.exists():
+                    if not install_path.exists() or not install_path.is_dir():
+                        continue
+
+                    # Ensure directory actually contains game files
+                    try:
+                        if not any(install_path.iterdir()):
+                            continue
+                    except Exception:
                         continue
 
                     exe_path = self.find_best_executable(install_path, name)
@@ -143,14 +167,27 @@ class GameScanner:
                     rec_method = quirk.get("recommended_method", "version") if quirk else "version"
                     notes = quirk.get("notes", "") if quirk else ""
 
+                    # Find local cover art if available in Steam librarycache
+                    local_cover = ""
+                    for lib_candidate in library_paths:
+                        cache_dir = lib_candidate / "appcache" / "librarycache" / str(appid)
+                        if cache_dir.exists():
+                            for cand_name in ["library_600x900.jpg", "library_600x900_2x.jpg", "library_hero.jpg", "header.jpg"]:
+                                if (cache_dir / cand_name).exists():
+                                    local_cover = str(cache_dir / cand_name)
+                                    break
+                        if local_cover:
+                            break
+
                     game = GameInfo(
                         id=str(appid),
                         title=name,
                         launcher="Steam",
                         install_path=str(install_path),
                         executable_path=str(exe_path) if exe_path else "",
+                        local_cover_path=local_cover,
                         is_native_linux=is_native,
-                        cover_url=f"https://cdn.cloudflare.steamstatic.com/steam/apps/{appid}/header.jpg",
+                        cover_url=f"https://cdn.cloudflare.steamstatic.com/steam/apps/{appid}/library_600x900.jpg",
                         recommended_method=rec_method,
                         quirk_notes=notes,
                     )
@@ -219,14 +256,29 @@ class GameScanner:
                             path_str = info.get("install_path", "")
                             if path_str and os.path.exists(path_str):
                                 install_path = Path(path_str)
+                                if not any(install_path.iterdir()):
+                                    continue
                                 exe_path = self.find_best_executable(install_path, title)
                                 quirk = get_game_quirk(app_name, title)
+
+                                # Find local Heroic icon / cover
+                                local_cover = ""
+                                for cand in [
+                                    hdir / "icons" / f"{app_name}.jpg",
+                                    hdir / "icons" / f"{app_name}.png",
+                                    hdir / "store_cache" / f"{app_name}.jpg",
+                                ]:
+                                    if cand.exists():
+                                        local_cover = str(cand)
+                                        break
+
                                 game = GameInfo(
                                     id=f"heroic_epic_{app_name}",
                                     title=title,
                                     launcher="Heroic (Epic)",
                                     install_path=str(install_path),
                                     executable_path=str(exe_path) if exe_path else "",
+                                    local_cover_path=local_cover,
                                     recommended_method=quirk.get("recommended_method", "version") if quirk else "version",
                                     quirk_notes=quirk.get("notes", "") if quirk else "",
                                 )
