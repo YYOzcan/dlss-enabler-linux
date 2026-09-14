@@ -7,9 +7,22 @@ import unittest
 from pathlib import Path
 
 from dlss_enabler.downloader import DLSSDownloader
+from dlss_enabler.i18n import I18nManager, SUPPORTED_LANGUAGES, t
 from dlss_enabler.patcher import GamePatcher, MANIFEST_NAME
 from dlss_enabler.quirks import get_game_quirk
 from dlss_enabler.scanner import GameInfo, GameScanner
+
+
+def test_i18n_multi_language_support():
+    i18n = I18nManager.get_instance()
+    # Ensure all 6 supported languages load and translate
+    for lang, _ in SUPPORTED_LANGUAGES:
+        i18n.set_language(lang)
+        assert t("app_title") != ""
+        assert t("btn_install") != ""
+        assert t("btn_uninstall") != ""
+        assert t("filter_all") != ""
+        assert t("status_found", count=5) != ""
 
 
 def test_game_scanner_initialization():

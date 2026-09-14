@@ -70,6 +70,20 @@ class GamePatcher:
 
         return " ".join(flags)
 
+    def get_launcher_instructions(self, launcher: str, method: str = "version") -> str:
+        """Return instructions tailored to the game launcher."""
+        from .i18n import t
+        lower_launcher = launcher.lower()
+        if "steam" in lower_launcher:
+            return t("launcher_steam_instructions", method=method)
+        elif "heroic" in lower_launcher:
+            return t("launcher_heroic_instructions", method=method)
+        elif "lutris" in lower_launcher:
+            return t("launcher_lutris_instructions", method=method)
+        elif "bottle" in lower_launcher:
+            return t("launcher_bottles_instructions", method=method)
+        return t("launcher_steam_instructions", method=method)
+
     def patch_game(
         self,
         game: GameInfo,
@@ -171,6 +185,9 @@ class GamePatcher:
                 src_cand = bin_dir / cand_name
                 if src_cand.exists():
                     dest_cand = target_dir / cand_name
+                    # Preserve existing custom INI configurations
+                    if cand_name.endswith(".ini") and dest_cand.exists():
+                        continue
                     if dest_cand.exists() and cand_name not in KNOWN_DLSS_FILES:
                         backup_name = f"{cand_name}{BACKUP_SUFFIX}"
                         shutil.copy2(dest_cand, target_dir / backup_name)

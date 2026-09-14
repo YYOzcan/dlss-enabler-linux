@@ -29,7 +29,8 @@
 - ⚡ **Tek Tıkla En Güncel Sürüm İndirme:** DLSS Enabler ve OptiScaler'ın en güncel resmi GitHub sürümlerini arka planda indirir, açar ve hazır bekletir.
 - 🛡️ **Güvenli Yedekleme & Geri Alma (Unpatch):** Orijinal DLL dosyalarını otomatik yedekler (`.dlss_backup`). İstediğiniz zaman tek tıkla oyunu ilk haline döndürür.
 - 🎛️ **Geniş Hook Yöntemleri:** `version.dll`, `dxgi.dll`, `winmm.dll`, `d3d12.dll`, `dinput8.dll` arasından oyuna özel önerilen yöntemi otomatik seçer.
-- 📋 **Tek Tıkla Başlatma Seçeneği Kopyalama:** Steam ve Proton için gerekli `WINEDLLOVERRIDES="version=n,b" SteamDeck=0 %command%` kodunu tek tıkla panoya kopyalar.
+- 🌐 **6 Dil Desteği:** 🇹🇷 Türkçe, 🇬🇧 English, 🇩🇪 Deutsch, 🇫🇷 Français, 🇪🇸 Español, 🇷🇺 Русский dilleri arasında arayüzden anında dinamik geçiş!
+- 📋 **Tek Tıkla Başlatma Seçeneği Kopyalama:** Steam, Heroic, Lutris ve Bottles için launcher'a özel talimatlar ve `WINEDLLOVERRIDES="version=n,b" SteamDeck=0 %command%` kodunu tek tıkla panoya kopyalar.
 - 🎨 **Siberpunk / Koyu Tema Arayüzü:** Akıcı arayüz, arama çubuğu, platform filtreleri ve oyun kapak görselleri.
 - 🐧 **Her Dağıtıma Uyumlu:** Arch, CachyOS, Fedora, Ubuntu, Debian, Pop!_OS, SteamOS, Bazzite ve Manjaro ile tam uyumlu.
 

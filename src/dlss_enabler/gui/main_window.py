@@ -1,4 +1,7 @@
-"""Main Window for DLSS Enabler Linux GUI."""
+"""Main Window for DLSS Enabler Linux GUI.
+Full multi-language support (English, Turkish, German, French, Spanish, Russian),
+cross-launcher instruction guides, and modern cyberpunk dark theme.
+"""
 
 from __future__ import annotations
 
@@ -9,14 +12,13 @@ from pathlib import Path
 from typing import Optional
 
 from PyQt6.QtCore import QObject, QSize, Qt, QThread, pyqtSignal
-from PyQt6.QtGui import QColor, QFont, QIcon, QPainter, QPixmap
+from PyQt6.QtGui import QColor, QFont, QIcon, QPixmap
 from PyQt6.QtWidgets import (
     QApplication,
     QButtonGroup,
     QComboBox,
     QFileDialog,
     QFrame,
-    QGraphicsDropShadowEffect,
     QHBoxLayout,
     QLabel,
     QLineEdit,
@@ -34,6 +36,7 @@ from PyQt6.QtWidgets import (
 )
 
 from ..downloader import DLSSDownloader, ReleaseInfo
+from ..i18n import I18nManager, SUPPORTED_LANGUAGES, t
 from ..patcher import GamePatcher, PatchResult
 from ..quirks import SUPPORTED_HOOK_METHODS, get_game_quirk
 from ..scanner import GameInfo, GameScanner
@@ -124,7 +127,7 @@ class GameListItemWidget(QWidget):
             padding: 3px 7px;
             border-radius: 4px;
         """)
-        self.platform_label.setFixedWidth(78)
+        self.platform_label.setFixedWidth(82)
         self.platform_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.platform_label)
 
@@ -153,7 +156,7 @@ class GameListItemWidget(QWidget):
     def update_status_badge(self):
         if self.game.is_patched:
             method_str = f" • {self.game.patch_method}.dll" if self.game.patch_method else ""
-            self.status_badge.setText(f"✓ Patched{method_str}")
+            self.status_badge.setText(f"{t('badge_patched')}{method_str}")
             self.status_badge.setStyleSheet("""
                 background-color: #064e3b;
                 color: #34d399;
@@ -163,8 +166,19 @@ class GameListItemWidget(QWidget):
                 border-radius: 6px;
                 border: 1px solid #059669;
             """)
+        elif self.game.is_native_linux and not self.game.executable_path:
+            self.status_badge.setText(t("badge_native_linux"))
+            self.status_badge.setStyleSheet("""
+                background-color: #1e293b;
+                color: #38bdf8;
+                font-weight: 600;
+                font-size: 11px;
+                padding: 4px 8px;
+                border-radius: 6px;
+                border: 1px solid #0284c7;
+            """)
         else:
-            self.status_badge.setText("Not Patched")
+            self.status_badge.setText(t("badge_unpatched"))
             self.status_badge.setStyleSheet("""
                 background-color: #1e2436;
                 color: #94a3b8;
@@ -182,9 +196,11 @@ class GameListItemWidget(QWidget):
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("DLSS Enabler for Linux - Universal Upscaling & Frame Gen Manager")
-        self.resize(1180, 760)
-        self.setMinimumSize(960, 620)
+        self.i18n = I18nManager.get_instance()
+        self.i18n.add_language_listener(self.update_ui_translations)
+
+        self.resize(1200, 780)
+        self.setMinimumSize(980, 640)
         self.setStyleSheet(DARK_THEME_QSS)
 
         # Core engines
@@ -202,6 +218,7 @@ class MainWindow(QMainWindow):
         self.active_workers: list[QThread] = []
 
         self.init_ui()
+        self.update_ui_translations()
         self.refresh_core_status()
         self.start_scan_games()
 
@@ -245,20 +262,20 @@ class MainWindow(QMainWindow):
         header = QFrame()
         header.setObjectName("TopHeader")
         layout = QHBoxLayout(header)
-        layout.setContentsMargins(20, 14, 20, 14)
-        layout.setSpacing(16)
+        layout.setContentsMargins(20, 12, 20, 12)
+        layout.setSpacing(14)
 
         # App Logo & Branding
         logo_layout = QVBoxLayout()
         logo_layout.setSpacing(1)
 
-        title = QLabel("DLSS Enabler for Linux")
-        title.setObjectName("AppTitle")
-        subtitle = QLabel("Universal Upscaler & Frame Generation Injector for Proton / Wine")
-        subtitle.setObjectName("AppSubtitle")
+        self.app_title_label = QLabel()
+        self.app_title_label.setObjectName("AppTitle")
+        self.app_subtitle_label = QLabel()
+        self.app_subtitle_label.setObjectName("AppSubtitle")
 
-        logo_layout.addWidget(title)
-        logo_layout.addWidget(subtitle)
+        logo_layout.addWidget(self.app_title_label)
+        logo_layout.addWidget(self.app_subtitle_label)
         layout.addLayout(logo_layout)
 
         layout.addStretch()
@@ -270,11 +287,11 @@ class MainWindow(QMainWindow):
         core_layout.setContentsMargins(12, 6, 12, 6)
         core_layout.setSpacing(10)
 
-        self.core_status_label = QLabel("Checking Core...")
+        self.core_status_label = QLabel(t("core_checking"))
         self.core_status_label.setObjectName("CoreVersionLabel")
         core_layout.addWidget(self.core_status_label)
 
-        self.btn_update_core = QPushButton("Check / Update")
+        self.btn_update_core = QPushButton()
         self.btn_update_core.setObjectName("btn_update_core")
         self.btn_update_core.setProperty("class", "btn-secondary")
         self.btn_update_core.setFixedHeight(30)
@@ -284,20 +301,39 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.core_status_card)
 
         # Add Custom Game Button
-        btn_add_custom = QPushButton("+ Add Game")
-        btn_add_custom.setProperty("class", "btn-secondary")
-        btn_add_custom.setFixedHeight(34)
-        btn_add_custom.clicked.connect(self.on_add_custom_game)
-        layout.addWidget(btn_add_custom)
+        self.btn_add_custom = QPushButton()
+        self.btn_add_custom.setProperty("class", "btn-secondary")
+        self.btn_add_custom.setFixedHeight(34)
+        self.btn_add_custom.clicked.connect(self.on_add_custom_game)
+        layout.addWidget(self.btn_add_custom)
 
         # Rescan Games Button
-        btn_rescan = QPushButton("↻ Refresh")
-        btn_rescan.setProperty("class", "btn-secondary")
-        btn_rescan.setFixedHeight(34)
-        btn_rescan.clicked.connect(self.start_scan_games)
-        layout.addWidget(btn_rescan)
+        self.btn_rescan = QPushButton()
+        self.btn_rescan.setProperty("class", "btn-secondary")
+        self.btn_rescan.setFixedHeight(34)
+        self.btn_rescan.clicked.connect(self.start_scan_games)
+        layout.addWidget(self.btn_rescan)
+
+        # Language Switcher
+        self.lang_combo = QComboBox()
+        self.lang_combo.setFixedWidth(130)
+        self.lang_combo.setFixedHeight(34)
+        for code, label in SUPPORTED_LANGUAGES:
+            self.lang_combo.addItem(label, code)
+
+        # Select current language in combo
+        idx = self.lang_combo.findData(self.i18n.current_lang)
+        if idx >= 0:
+            self.lang_combo.setCurrentIndex(idx)
+        self.lang_combo.currentIndexChanged.connect(self.on_language_changed)
+        layout.addWidget(self.lang_combo)
 
         return header
+
+    def on_language_changed(self, index: int):
+        code = self.lang_combo.currentData()
+        if code:
+            self.i18n.set_language(code)
 
     def _create_progress_banner(self) -> QWidget:
         banner = QFrame()
@@ -306,7 +342,7 @@ class MainWindow(QMainWindow):
         layout.setContentsMargins(16, 6, 16, 6)
         layout.setSpacing(14)
 
-        self.progress_label = QLabel("Downloading DLSS Enabler binaries...")
+        self.progress_label = QLabel()
         self.progress_label.setStyleSheet("color: #38bdf8; font-weight: 600;")
         layout.addWidget(self.progress_label)
 
@@ -331,7 +367,6 @@ class MainWindow(QMainWindow):
 
         # Search Box
         self.search_input = QLineEdit()
-        self.search_input.setPlaceholderText("🔍 Search installed games...")
         self.search_input.textChanged.connect(self.apply_filters)
         layout.addWidget(self.search_input)
 
@@ -340,11 +375,11 @@ class MainWindow(QMainWindow):
         filter_layout.setSpacing(6)
 
         self.launcher_filter_group = QButtonGroup(self)
-        self.btn_filter_all = QPushButton("All")
-        self.btn_filter_steam = QPushButton("Steam")
-        self.btn_filter_heroic = QPushButton("Heroic")
-        self.btn_filter_lutris = QPushButton("Lutris")
-        self.btn_filter_custom = QPushButton("Custom")
+        self.btn_filter_all = QPushButton()
+        self.btn_filter_steam = QPushButton()
+        self.btn_filter_heroic = QPushButton()
+        self.btn_filter_lutris = QPushButton()
+        self.btn_filter_custom = QPushButton()
 
         for i, btn in enumerate([self.btn_filter_all, self.btn_filter_steam, self.btn_filter_heroic, self.btn_filter_lutris, self.btn_filter_custom]):
             btn.setProperty("class", "filter-chip")
@@ -361,9 +396,9 @@ class MainWindow(QMainWindow):
         status_row.setSpacing(6)
 
         self.status_filter_group = QButtonGroup(self)
-        self.btn_status_all = QPushButton("All Status")
-        self.btn_status_patched = QPushButton("Patched Only")
-        self.btn_status_unpatched = QPushButton("Unpatched Only")
+        self.btn_status_all = QPushButton()
+        self.btn_status_patched = QPushButton()
+        self.btn_status_unpatched = QPushButton()
 
         for i, btn in enumerate([self.btn_status_all, self.btn_status_patched, self.btn_status_unpatched]):
             btn.setProperty("class", "filter-chip")
@@ -381,7 +416,7 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.game_list_widget, stretch=1)
 
         # Footer count label
-        self.footer_label = QLabel("Scanning games...")
+        self.footer_label = QLabel()
         self.footer_label.setStyleSheet("color: #64748b; font-size: 11px; padding: 2px;")
         layout.addWidget(self.footer_label)
 
@@ -411,16 +446,16 @@ class MainWindow(QMainWindow):
         icon_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         empty_layout.addWidget(icon_lbl)
 
-        empty_title = QLabel("Select a Game")
-        empty_title.setStyleSheet("font-size: 18px; font-weight: 700; color: #cbd5e1;")
-        empty_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        empty_layout.addWidget(empty_title)
+        self.empty_title = QLabel()
+        self.empty_title.setStyleSheet("font-size: 18px; font-weight: 700; color: #cbd5e1;")
+        self.empty_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        empty_layout.addWidget(self.empty_title)
 
-        empty_desc = QLabel("Choose a game from the list to view compatibility, configure proxy hook methods, and install DLSS Enabler in one click.")
-        empty_desc.setStyleSheet("color: #64748b; font-size: 13px; max-width: 400px;")
-        empty_desc.setWordWrap(True)
-        empty_desc.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        empty_layout.addWidget(empty_desc)
+        self.empty_desc = QLabel()
+        self.empty_desc.setStyleSheet("color: #64748b; font-size: 13px; max-width: 440px;")
+        self.empty_desc.setWordWrap(True)
+        self.empty_desc.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        empty_layout.addWidget(self.empty_desc)
 
         layout.addWidget(self.empty_state_widget)
 
@@ -446,19 +481,18 @@ class MainWindow(QMainWindow):
         title_info_layout = QVBoxLayout()
         title_info_layout.setSpacing(4)
 
-        self.detail_title = QLabel("Game Title")
+        self.detail_title = QLabel()
         self.detail_title.setObjectName("DetailTitle")
         title_info_layout.addWidget(self.detail_title)
 
         meta_row = QHBoxLayout()
         meta_row.setSpacing(8)
 
-        self.detail_launcher = QLabel("Platform")
+        self.detail_launcher = QLabel()
         self.detail_launcher.setObjectName("DetailLauncher")
         meta_row.addWidget(self.detail_launcher)
 
-        self.detail_status_badge = QLabel("Not Patched")
-        self.detail_status_badge.setProperty("class", "badge-unpatched")
+        self.detail_status_badge = QLabel()
         meta_row.addWidget(self.detail_status_badge)
         meta_row.addStretch()
 
@@ -472,9 +506,9 @@ class MainWindow(QMainWindow):
         paths_layout = QVBoxLayout(paths_card)
         paths_layout.setSpacing(10)
 
-        path_title = QLabel("TARGET EXECUTABLE & DIRECTORY")
-        path_title.setStyleSheet("font-size: 11px; font-weight: 800; color: #818cf8; letter-spacing: 0.5px;")
-        paths_layout.addWidget(path_title)
+        self.target_exe_header_lbl = QLabel()
+        self.target_exe_header_lbl.setStyleSheet("font-size: 11px; font-weight: 800; color: #818cf8; letter-spacing: 0.5px;")
+        paths_layout.addWidget(self.target_exe_header_lbl)
 
         exe_row = QHBoxLayout()
         self.exe_path_input = QLineEdit()
@@ -482,10 +516,10 @@ class MainWindow(QMainWindow):
         self.exe_path_input.setStyleSheet("background-color: #0b0d14; font-family: monospace; font-size: 11px;")
         exe_row.addWidget(self.exe_path_input, stretch=1)
 
-        btn_browse_exe = QPushButton("Browse...")
-        btn_browse_exe.setProperty("class", "btn-secondary")
-        btn_browse_exe.clicked.connect(self.on_change_executable)
-        exe_row.addWidget(btn_browse_exe)
+        self.btn_browse_exe = QPushButton()
+        self.btn_browse_exe.setProperty("class", "btn-secondary")
+        self.btn_browse_exe.clicked.connect(self.on_change_executable)
+        exe_row.addWidget(self.btn_browse_exe)
         paths_layout.addLayout(exe_row)
 
         detail_layout.addWidget(paths_card)
@@ -506,14 +540,14 @@ class MainWindow(QMainWindow):
         config_layout = QVBoxLayout(config_card)
         config_layout.setSpacing(14)
 
-        config_title = QLabel("DLSS ENABLER INJECTION METHOD")
-        config_title.setStyleSheet("font-size: 11px; font-weight: 800; color: #818cf8; letter-spacing: 0.5px;")
-        config_layout.addWidget(config_title)
+        self.method_header_lbl = QLabel()
+        self.method_header_lbl.setStyleSheet("font-size: 11px; font-weight: 800; color: #818cf8; letter-spacing: 0.5px;")
+        config_layout.addWidget(self.method_header_lbl)
 
         method_row = QHBoxLayout()
-        method_lbl = QLabel("Hook Proxy DLL:")
-        method_lbl.setStyleSheet("font-weight: 600; color: #cbd5e1;")
-        method_row.addWidget(method_lbl)
+        self.hook_proxy_label_lbl = QLabel()
+        self.hook_proxy_label_lbl.setStyleSheet("font-weight: 600; color: #cbd5e1;")
+        method_row.addWidget(self.hook_proxy_label_lbl)
 
         self.method_combo = QComboBox()
         for key, desc in SUPPORTED_HOOK_METHODS:
@@ -523,9 +557,9 @@ class MainWindow(QMainWindow):
         config_layout.addLayout(method_row)
 
         # Proton Launch Options Box
-        launch_opts_title = QLabel("RECOMMENDED PROTON LAUNCH OPTIONS")
-        launch_opts_title.setStyleSheet("font-size: 11px; font-weight: 800; color: #818cf8; letter-spacing: 0.5px; margin-top: 6px;")
-        config_layout.addWidget(launch_opts_title)
+        self.launch_opts_title_lbl = QLabel()
+        self.launch_opts_title_lbl.setStyleSheet("font-size: 11px; font-weight: 800; color: #818cf8; letter-spacing: 0.5px; margin-top: 6px;")
+        config_layout.addWidget(self.launch_opts_title_lbl)
 
         launch_row = QHBoxLayout()
         self.launch_options_box = QLineEdit()
@@ -533,7 +567,7 @@ class MainWindow(QMainWindow):
         self.launch_options_box.setReadOnly(True)
         launch_row.addWidget(self.launch_options_box, stretch=1)
 
-        self.btn_copy_launch = QPushButton("📋 Copy")
+        self.btn_copy_launch = QPushButton()
         self.btn_copy_launch.setProperty("class", "btn-secondary")
         self.btn_copy_launch.clicked.connect(self.copy_launch_options)
         launch_row.addWidget(self.btn_copy_launch)
@@ -544,6 +578,12 @@ class MainWindow(QMainWindow):
         self.copy_toast.setStyleSheet("color: #10b981; font-weight: 600; font-size: 11px;")
         config_layout.addWidget(self.copy_toast)
 
+        # Specific launcher instructions
+        self.launcher_instructions_label = QLabel("")
+        self.launcher_instructions_label.setStyleSheet("color: #94a3b8; font-size: 11px; padding: 4px 0;")
+        self.launcher_instructions_label.setWordWrap(True)
+        config_layout.addWidget(self.launcher_instructions_label)
+
         detail_layout.addWidget(config_card)
 
         # Primary Actions Row
@@ -552,19 +592,19 @@ class MainWindow(QMainWindow):
         actions_layout = QHBoxLayout(actions_card)
         actions_layout.setSpacing(12)
 
-        self.btn_install_patch = QPushButton("⚡ Install DLSS Enabler")
+        self.btn_install_patch = QPushButton()
         self.btn_install_patch.setProperty("class", "btn-primary")
         self.btn_install_patch.setFixedHeight(44)
         self.btn_install_patch.clicked.connect(self.on_install_patch)
         actions_layout.addWidget(self.btn_install_patch, stretch=2)
 
-        self.btn_uninstall_patch = QPushButton("↺ Uninstall / Restore")
+        self.btn_uninstall_patch = QPushButton()
         self.btn_uninstall_patch.setProperty("class", "btn-danger")
         self.btn_uninstall_patch.setFixedHeight(44)
         self.btn_uninstall_patch.clicked.connect(self.on_uninstall_patch)
         actions_layout.addWidget(self.btn_uninstall_patch, stretch=1)
 
-        self.btn_open_folder = QPushButton("📁 Open Folder")
+        self.btn_open_folder = QPushButton()
         self.btn_open_folder.setProperty("class", "btn-secondary")
         self.btn_open_folder.setFixedHeight(44)
         self.btn_open_folder.clicked.connect(self.on_open_folder)
@@ -578,11 +618,11 @@ class MainWindow(QMainWindow):
         files_card_layout = QVBoxLayout(self.files_card)
         files_card_layout.setSpacing(8)
 
-        files_title = QLabel("INSTALLED COMPONENTS")
-        files_title.setStyleSheet("font-size: 11px; font-weight: 800; color: #818cf8; letter-spacing: 0.5px;")
-        files_card_layout.addWidget(files_title)
+        self.components_header_lbl = QLabel()
+        self.components_header_lbl.setStyleSheet("font-size: 11px; font-weight: 800; color: #818cf8; letter-spacing: 0.5px;")
+        files_card_layout.addWidget(self.components_header_lbl)
 
-        self.installed_files_label = QLabel("No active DLSS Enabler files installed.")
+        self.installed_files_label = QLabel()
         self.installed_files_label.setStyleSheet("color: #94a3b8; font-size: 12px; font-family: monospace;")
         self.installed_files_label.setWordWrap(True)
         files_card_layout.addWidget(self.installed_files_label)
@@ -596,24 +636,74 @@ class MainWindow(QMainWindow):
         return scroll
 
     # =========================================================================
+    # TRANSLATION UPDATE
+    # =========================================================================
+    def update_ui_translations(self):
+        self.setWindowTitle(f"{t('app_title')} - {t('app_subtitle')}")
+        self.app_title_label.setText(t("app_title"))
+        self.app_subtitle_label.setText(t("app_subtitle"))
+
+        self.btn_add_custom.setText(t("btn_add_game"))
+        self.btn_rescan.setText(t("btn_refresh"))
+
+        self.search_input.setPlaceholderText(t("search_placeholder"))
+        self.btn_filter_all.setText(t("filter_all"))
+        self.btn_filter_steam.setText(t("filter_steam"))
+        self.btn_filter_heroic.setText(t("filter_heroic"))
+        self.btn_filter_lutris.setText(t("filter_lutris"))
+        self.btn_filter_custom.setText(t("filter_custom"))
+
+        self.btn_status_all.setText(t("filter_status_all"))
+        self.btn_status_patched.setText(t("filter_status_patched"))
+        self.btn_status_unpatched.setText(t("filter_status_unpatched"))
+
+        self.empty_title.setText(t("empty_title"))
+        self.empty_desc.setText(t("empty_desc"))
+
+        self.target_exe_header_lbl.setText(t("target_exe_header"))
+        self.btn_browse_exe.setText(t("btn_browse"))
+
+        self.method_header_lbl.setText(t("method_header"))
+        self.hook_proxy_label_lbl.setText(t("hook_proxy_label"))
+        self.launch_opts_title_lbl.setText(t("launch_options_header"))
+        self.btn_copy_launch.setText(t("btn_copy"))
+
+        self.btn_uninstall_patch.setText(t("btn_uninstall"))
+        self.btn_open_folder.setText(t("btn_open_folder"))
+        self.components_header_lbl.setText(t("components_header"))
+
+        self.refresh_core_status()
+        self.footer_label.setText(t("status_found", count=len(self.all_games)))
+
+        if self.selected_game:
+            self.display_game_details(self.selected_game)
+
+        # Refresh list item widgets
+        for i in range(self.game_list_widget.count()):
+            item = self.game_list_widget.item(i)
+            widget = self.game_list_widget.itemWidget(item)
+            if isinstance(widget, GameListItemWidget):
+                widget.update_status_badge()
+
+    # =========================================================================
     # CORE ENGINE STATUS & UPDATES
     # =========================================================================
     def refresh_core_status(self):
         cached = self.downloader.get_cached_version()
         if cached:
             ver = cached.get("tag", "v0.9.4")
-            self.core_status_label.setText(f"● DLSS Enabler {ver} (Ready)")
+            self.core_status_label.setText(t("core_ready", ver=ver))
             self.core_status_label.setStyleSheet("color: #10b981; font-weight: 700;")
-            self.btn_update_core.setText("Check Updates")
+            self.btn_update_core.setText(t("btn_update_core"))
         else:
-            self.core_status_label.setText("○ Not Downloaded")
+            self.core_status_label.setText(t("core_missing"))
             self.core_status_label.setStyleSheet("color: #f59e0b; font-weight: 700;")
-            self.btn_update_core.setText("Download Now")
+            self.btn_update_core.setText(t("btn_download_core"))
 
     def start_download_core(self):
         self.progress_banner.show()
         self.progress_bar.setValue(0)
-        self.progress_label.setText("Connecting to GitHub...")
+        self.progress_label.setText(t("download_connecting"))
         self.btn_update_core.setEnabled(False)
 
         worker = DownloadWorker(self.downloader)
@@ -632,15 +722,15 @@ class MainWindow(QMainWindow):
         self.btn_update_core.setEnabled(True)
         self.refresh_core_status()
         if success:
-            QMessageBox.information(self, "DLSS Enabler Ready", msg)
+            QMessageBox.information(self, t("dialog_download_success_title"), msg)
         else:
-            QMessageBox.warning(self, "Download Failed", f"Could not download binaries:\n{msg}")
+            QMessageBox.warning(self, t("dialog_download_fail_title"), t("dialog_download_fail_msg", err=msg))
 
     # =========================================================================
     # SCANNING & LIST MANAGEMENT
     # =========================================================================
     def start_scan_games(self):
-        self.footer_label.setText("Scanning games across Steam, Heroic, Lutris, Bottles...")
+        self.footer_label.setText(t("status_scanning"))
         worker = ScannerWorker(self.scanner)
         worker.finished.connect(self.on_scan_finished)
         self.active_workers.append(worker)
@@ -649,7 +739,7 @@ class MainWindow(QMainWindow):
     def on_scan_finished(self, games: list[GameInfo]):
         self.all_games = games
         self.apply_filters()
-        self.footer_label.setText(f"Found {len(games)} games across installed launchers.")
+        self.footer_label.setText(t("status_found", count=len(games)))
 
     def apply_filters(self):
         query = self.search_input.text().strip().lower()
@@ -719,19 +809,25 @@ class MainWindow(QMainWindow):
 
         # Title & Meta
         self.detail_title.setText(game.title)
-        self.detail_launcher.setText(f"Platform: {game.launcher}")
+        self.detail_launcher.setText(f"{t('filter_all')}: {game.launcher}")
 
         # Status badge
         if game.is_patched:
-            self.detail_status_badge.setText(f"✓ Patched ({game.patch_method}.dll)")
+            self.detail_status_badge.setText(f"{t('badge_patched')} ({game.patch_method}.dll)")
             self.detail_status_badge.setProperty("class", "badge-patched")
-            self.btn_install_patch.setText("⚡ Reinstall / Update DLSS Enabler")
+            self.btn_install_patch.setText(t("btn_reinstall"))
             self.btn_uninstall_patch.setEnabled(True)
             self.btn_uninstall_patch.show()
-        else:
-            self.detail_status_badge.setText("Not Patched")
+        elif game.is_native_linux and not game.executable_path:
+            self.detail_status_badge.setText(t("badge_native_linux"))
             self.detail_status_badge.setProperty("class", "badge-unpatched")
-            self.btn_install_patch.setText("⚡ Install DLSS Enabler")
+            self.btn_install_patch.setText(t("btn_install"))
+            self.btn_uninstall_patch.setEnabled(False)
+            self.btn_uninstall_patch.hide()
+        else:
+            self.detail_status_badge.setText(t("badge_unpatched"))
+            self.detail_status_badge.setProperty("class", "badge-unpatched")
+            self.btn_install_patch.setText(t("btn_install"))
             self.btn_uninstall_patch.setEnabled(False)
             self.btn_uninstall_patch.hide()
 
@@ -750,19 +846,19 @@ class MainWindow(QMainWindow):
                 pix = QPixmap(str(cached_cover))
                 self.cover_label.setPixmap(pix)
             else:
-                self.cover_label.setText("Loading...")
+                self.cover_label.setText("...")
                 worker = ImageLoaderWorker(game.id, game.cover_url, self.covers_cache)
                 worker.image_loaded.connect(self.on_cover_loaded)
                 self.active_workers.append(worker)
                 worker.start()
         else:
-            self.cover_label.setText("No Art")
+            self.cover_label.setText("")
 
         # Quirk Box
         quirk = get_game_quirk(game.id, game.title)
         notes = quirk.get("notes") if quirk else game.quirk_notes
         if notes:
-            self.quirk_label.setText(f"💡 Recommendation & Tips:\n{notes}")
+            self.quirk_label.setText(f"{t('tips_header')}\n{notes}")
             self.quirk_card.show()
         else:
             self.quirk_card.hide()
@@ -787,15 +883,20 @@ class MainWindow(QMainWindow):
         cmd = self.patcher.generate_launch_options(method)
         self.launch_options_box.setText(cmd)
         self.copy_toast.setText("")
+        if self.selected_game:
+            instructions = self.patcher.get_launcher_instructions(self.selected_game.launcher, method)
+            self.launcher_instructions_label.setText(f"ℹ️ {instructions}")
+        else:
+            self.launcher_instructions_label.setText("")
 
     def copy_launch_options(self):
         clipboard = QApplication.clipboard()
         clipboard.setText(self.launch_options_box.text())
-        self.copy_toast.setText("✓ Copied launch options to clipboard!")
+        self.copy_toast.setText(t("toast_copied"))
 
     def update_installed_files_view(self):
         if not self.selected_game or not self.selected_game.is_patched:
-            self.installed_files_label.setText("No active DLSS Enabler files installed.")
+            self.installed_files_label.setText(t("no_components"))
             return
 
         target_dir = self.patcher.get_target_directory(self.selected_game)
@@ -830,7 +931,7 @@ class MainWindow(QMainWindow):
 
         method = self.method_combo.currentData() or "version"
         self.btn_install_patch.setEnabled(False)
-        self.btn_install_patch.setText("Installing...")
+        self.btn_install_patch.setText(t("btn_installing"))
         QApplication.processEvents()
 
         res: PatchResult = self.patcher.patch_game(self.selected_game, method=method)
@@ -848,15 +949,16 @@ class MainWindow(QMainWindow):
 
             QMessageBox.information(
                 self,
-                "Installation Successful",
-                f"DLSS Enabler has been installed successfully!\n\n"
-                f"Hook Method: {res.method}.dll\n"
-                f"Target: {res.target_dir}\n\n"
-                f"Launch Options:\n{res.launch_options}\n\n"
-                f"Be sure to set the launch options in your game properties."
+                t("dialog_install_success_title"),
+                t(
+                    "dialog_install_success_msg",
+                    method=res.method,
+                    target=res.target_dir,
+                    opts=res.launch_options
+                )
             )
         else:
-            QMessageBox.critical(self, "Installation Failed", f"Could not install DLSS Enabler:\n{res.message}")
+            QMessageBox.critical(self, t("dialog_install_fail_title"), f"{res.message}")
 
     def on_uninstall_patch(self):
         if not self.selected_game:
@@ -864,9 +966,8 @@ class MainWindow(QMainWindow):
 
         reply = QMessageBox.question(
             self,
-            "Confirm Uninstall",
-            f"Are you sure you want to remove DLSS Enabler from '{self.selected_game.title}'?\n"
-            f"Original backup files will be restored automatically.",
+            t("dialog_uninstall_confirm_title"),
+            t("dialog_uninstall_confirm_msg", title=self.selected_game.title),
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
         )
         if reply != QMessageBox.StandardButton.Yes:
@@ -881,9 +982,9 @@ class MainWindow(QMainWindow):
                 widget = self.game_list_widget.itemWidget(item)
                 if isinstance(widget, GameListItemWidget):
                     widget.update_status_badge()
-            QMessageBox.information(self, "Restored", msg)
+            QMessageBox.information(self, t("dialog_restored_title"), msg)
         else:
-            QMessageBox.warning(self, "Uninstall Notice", msg)
+            QMessageBox.warning(self, t("dialog_uninstall_notice_title"), msg)
 
     def on_open_folder(self):
         if not self.selected_game:
@@ -898,7 +999,7 @@ class MainWindow(QMainWindow):
         start_dir = self.selected_game.install_path
         fpath, _ = QFileDialog.getOpenFileName(
             self,
-            "Select Game Executable",
+            t("dialog_select_game_exe"),
             start_dir,
             "Executables (*.exe);;All Files (*)"
         )
@@ -911,7 +1012,7 @@ class MainWindow(QMainWindow):
     def on_add_custom_game(self):
         dpath = QFileDialog.getExistingDirectory(
             self,
-            "Select Game Folder",
+            t("dialog_select_game_folder"),
             str(Path.home())
         )
         if dpath:

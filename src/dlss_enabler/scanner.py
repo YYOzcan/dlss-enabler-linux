@@ -36,6 +36,7 @@ class GameInfo:
     patch_version: str = ""
     patch_time: str = ""
     has_backup: bool = False
+    is_native_linux: bool = False
     cover_url: str = ""
     quirk_notes: str = ""
     recommended_method: str = "version"
@@ -137,6 +138,7 @@ class GameScanner:
                         continue
 
                     exe_path = self.find_best_executable(install_path, name)
+                    is_native = not exe_path and self.check_is_native_linux(install_path)
                     quirk = get_game_quirk(appid, name)
                     rec_method = quirk.get("recommended_method", "version") if quirk else "version"
                     notes = quirk.get("notes", "") if quirk else ""
@@ -147,6 +149,7 @@ class GameScanner:
                         launcher="Steam",
                         install_path=str(install_path),
                         executable_path=str(exe_path) if exe_path else "",
+                        is_native_linux=is_native,
                         cover_url=f"https://cdn.cloudflare.steamstatic.com/steam/apps/{appid}/header.jpg",
                         recommended_method=rec_method,
                         quirk_notes=notes,
@@ -494,6 +497,23 @@ class GameScanner:
         score -= depth * 10
 
         return score
+
+    def check_is_native_linux(self, root_dir: Path) -> bool:
+        """Check if game directory appears to be a native Linux build rather than Windows/Proton."""
+        if not root_dir.is_dir():
+            return False
+        try:
+            for item in root_dir.iterdir():
+                if item.is_file():
+                    name_lower = item.name.lower()
+                    if name_lower.endswith((".x86_64", ".x86", ".bin")) or item.name in ["shotgun_king"]:
+                        return True
+                    # Check Linux binary without extension
+                    if "." not in item.name and os.access(item, os.X_OK) and not item.name.endswith(".sh"):
+                        return True
+        except Exception:
+            pass
+        return False
 
     # =========================================================================
     # PATCH STATUS DETECTION
