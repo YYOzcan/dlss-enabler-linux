@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="50%" stop-color="#1e1b4b"/>
+      <stop offset="100%" stop-color="#311042"/>
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981"/>
+      <stop offset="50%" stop-color="#06b6d4"/>
+      <stop offset="100%" stop-color="#6366f1"/>
+    </linearGradient>
+    <linearGradient id="glowGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#6366f1"/>
+      <stop offset="100%" stop-color="#a855f7"/>
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="16" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Base Rounded Card -->
+  <rect x="24" y="24" width="464" height="464" rx="96" fill="url(#bgGrad)" stroke="#334155" stroke-width="6"/>
+
+  <!-- Futuristic Border Hex / Shield -->
+  <polygon points="256,70 420,165 420,355 256,450 92,355 92,165" fill="none" stroke="url(#accentGrad)" stroke-width="12" stroke-linejoin="round" opacity="0.4" filter="url(#glow)"/>
+  <polygon points="256,70 420,165 420,355 256,450 92,355 92,165" fill="#131a2e" fill-opacity="0.8" stroke="url(#accentGrad)" stroke-width="8" stroke-linejoin="round"/>
+
+  <!-- Center Double Upscaling Arrows & Lightning -->
+  <!-- Top Arrow (Upscale) -->
+  <path d="M 256,120 L 340,210 L 290,210 L 290,280 L 222,280 L 222,210 L 172,210 Z" fill="url(#accentGrad)" filter="url(#glow)"/>
+
+  <!-- Frame Gen Pulse (Side Wings) -->
+  <path d="M 130,260 L 180,260 L 160,330 L 110,330 Z" fill="#06b6d4" opacity="0.8"/>
+  <path d="M 382,260 L 332,260 L 352,330 L 402,330 Z" fill="#8b5cf6" opacity="0.8"/>
+
+  <!-- Center Tech Diamond / Core -->
+  <polygon points="256,305 285,345 256,385 227,345" fill="#10b981" filter="url(#glow)"/>
+
+  <!-- Lettering DLSS -->
+  <text x="256" y="425" text-anchor="middle" font-family="'Segoe UI', 'Inter', 'Ubuntu', sans-serif" font-size="34" font-weight="900" fill="#ffffff" letter-spacing="4">DLSS ENABLER</text>
+</svg>

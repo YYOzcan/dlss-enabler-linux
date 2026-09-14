@@ -1,0 +1,12 @@
+[Desktop Entry]
+Name=DLSS Enabler
+Comment=Universal DLSS & Frame Generation Manager for Linux / Proton
+GenericName=Game Upscaler Manager
+Exec=dlss-enabler-gui %U
+Icon=dlss-enabler
+Terminal=false
+Type=Application
+Categories=Game;Utility;Settings;
+Keywords=dlss;fsr;xess;optiscaler;frame-generation;upscaling;proton;wine;steam;
+StartupNotify=true
+StartupWMClass=DLSS Enabler Linux

@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dlss-enabler-linux"
+version = "1.0.0"
+description = "Universal DLSS & Frame Generation Manager for Linux / Proton"
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [
+    { name = "Yiğit Özcan", email = "yigitozcan@users.noreply.github.com" }
+]
+keywords = ["dlss", "fsr", "xess", "optiscaler", "proton", "wine", "gaming", "linux"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: POSIX :: Linux",
+    "Topic :: Games/Entertainment",
+]
+dependencies = [
+    "PyQt6>=6.4.0",
+    "requests>=2.28.0",
+]
+
+[project.scripts]
+dlss-enabler-gui = "dlss_enabler.main:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
