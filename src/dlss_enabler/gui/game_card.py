@@ -130,8 +130,8 @@ class GameCardWidget(QWidget):
             )
             # Center crop
             x_off = (scaled.width() - w) // 2
-            y_off = (scaled.height() - self.COVER_HEIGHT) // 2
-            painter.drawPixmap(0, 0, scaled, x_off, y_off, w, self.COVER_HEIGHT)
+            y_off = max(0, (scaled.height() - self.COVER_HEIGHT) // 2)
+            painter.drawPixmap(0, 0, w, self.COVER_HEIGHT, scaled, x_off, y_off, w, self.COVER_HEIGHT)
 
             # Gradient scrim at bottom of cover for smooth transition
             grad = QBrush()

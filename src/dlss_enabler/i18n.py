@@ -413,7 +413,7 @@ class I18nManager:
         return cls._instance
 
     def _detect_default_language(self) -> str:
-        """Read saved language or detect from system locale."""
+        """Read saved language or default to English."""
         if self.settings_file.exists():
             try:
                 with open(self.settings_file, "r", encoding="utf-8") as f:
@@ -424,18 +424,6 @@ class I18nManager:
             except Exception:
                 pass
 
-        # Auto-detect from system environment
-        lang_env = os.environ.get("LANG", "").lower()
-        if "tr" in lang_env:
-            return "tr"
-        elif "de" in lang_env:
-            return "de"
-        elif "fr" in lang_env:
-            return "fr"
-        elif "es" in lang_env:
-            return "es"
-        elif "ru" in lang_env:
-            return "ru"
         return "en"
 
     def set_language(self, lang_code: str) -> None:
